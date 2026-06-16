@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D列印AI輔助網頁</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .glass-hover:hover {
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(34, 197, 94, 0.3); /* green-500 tint */
+            transform: translateY(-2px);
+            transition: all 0.3s ease;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .loader {
+            border-top-color: #22c55e;
+            animation: spinner 1.5s linear infinite;
+        }
+
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .tab-active {
+            color: #22c55e;
+            border-bottom: 2px solid #22c55e;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass px-6 py-4">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 class="text-xl font-bold text-green-600">3D Print AI</h1>
+            <div class="space-x-8">
+                <button onclick="switchTab('ai-assistant')" id="nav-ai-assistant" class="tab-active font-medium transition-colors hover:text-green-500">AI 參數助手</button>
+                <button onclick="switchTab('filaments')" id="nav-filaments" class="font-medium transition-colors hover:text-green-500">耗材介紹</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-4 max-w-6xl mx-auto">
+        
+        <!-- Section: AI Assistant -->
+        <section id="ai-assistant-section" class="fade-in">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight">3D列印AI輔助網頁</h2>
+                <p class="text-gray-500 text-lg">為您的創意尋找最完美的列印參數</p>
+            </div>
+
+            <div class="max-w-2xl mx-auto glass rounded-3xl p-8 mb-12">
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">要製作的物品</label>
+                        <input type="text" id="input-object" placeholder="例如：手機架、齒輪、公仔..." 
+                            class="w-full px-4 py-3 rounded-xl bg-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-2">使用情境</label>
+                        <input type="text" id="input-scenario" placeholder="例如：放在車上抗熱、給小朋友玩、純外觀展示..." 
+                            class="w-full px-4 py-3 rounded-xl bg-white/50 border border-white/30 focus:outline-none focus:ring-2 focus:ring-green-500/50 transition-all">
+                    </div>
+                    <button onclick="analyzeParameters()" 
+                        class="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl shadow-lg shadow-green-500/30 transition-all transform active:scale-95">
+                        開始分析參數
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loading-state" class="hidden text-center py-12">
+                <div class="inline-block w-12 h-12 border-4 border-gray-200 border-t-green-500 rounded-full loader mb-4"></div>
+                <p class="text-gray-600 animate-pulse">正在為您的模型計算最穩固的結構...</p>
+            </div>
+
+            <!-- Result Cards Area -->
+            <div id="result-area" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6 fade-in">
+                <!-- Cards will be injected here -->
+            </div>
+        </section>
+
+        <!-- Section: Filaments Guide -->
+        <section id="filaments-section" class="hidden fade-in">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 tracking-tight">耗材百科全書</h2>
+                <p class="text-gray-500 text-lg">探索各種材料的特性與無限可能</p>
+            </div>
+
+            <!-- Stage 1: Categories -->
+            <div id="filament-categories" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Category buttons will be injected here -->
+            </div>
+
+            <!-- Stage 2: Details -->
+            <div id="filament-details" class="hidden">
+                <button onclick="showCategories()" class="mb-8 flex items-center text-green-600 font-medium hover:text-green-700 transition-colors">
+                    <span class="mr-2">←</span> 返回分類列表
+                </button>
+                <div id="filament-cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Filament cards will be injected here -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- Data ---
+        const filamentDatabase = [
+            {
+                id: "pla",
+                category: "1. 基礎與入門耗材",
+                name: "PLA（聚乳酸）",
+                image: "https://images.unsplash.com/photo-1631002165103-0975608d3e23?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["市佔率最高", "源自植物澱粉，環保無毒", "列印時有微甜的氣味", "不易翹曲，不需要加熱底板"],
+                drawbacks: ["耐熱性差（50°C–60°C軟化）", "質地較脆"],
+                variants: "PLA+（韌性加強）、Silk PLA（絲綢光澤）、Matte PLA（啞光磨砂）",
+                applications: "日常擺飾、外觀模型、新手練習、無耐熱需求之物件"
+            },
+            {
+                id: "petg",
+                category: "1. 基礎與入門耗材",
+                name: "PETG（聚對苯二甲酸乙二酯改性）",
+                image: "https://images.unsplash.com/photo-1581092921461-eab62e92c859?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["結合 PLA 易印性與 ABS 強度", "抗化學性佳、防水、耐候性好", "帶有半透明感"],
+                drawbacks: ["容易拉絲（起毛邊）", "對黏著度要求高（易黏死底板）"],
+                variants: "高透 PETG、碳纖增強 PETG",
+                applications: "機械零件、容器、戶外用品"
+            },
+            {
+                id: "abs",
+                category: "2. 工程級與高強度耗材",
+                name: "ABS（丙烯腈-丁二烯-苯乙烯）",
+                image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["經典工程塑料（如樂高）", "耐熱（約 100°C）、韌性好", "可用丙酮表面拋光"],
+                drawbacks: ["收縮率大、極易翹曲", "需封閉機箱", "強烈刺鼻味"],
+                variants: "低氣味 ABS、ABS+ (優化收縮率)",
+                applications: "工具手把、耐溫零件、需表面拋光之物件"
+            },
+            {
+                id: "asa",
+                category: "2. 工程級與高強度耗材",
+                name: "ASA（丙烯烯酸酯-苯乙烯-丙烯腈）",
+                image: "https://images.unsplash.com/photo-1591439657848-9f4b9ce436b9?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["ABS 升級版", "極佳抗紫外線（UV）與耐候性", "機械性能優異"],
+                drawbacks: ["需要高溫熱床與封閉機箱以防翹曲"],
+                variants: "戶外專業款",
+                applications: "汽車外掛件、戶外導向架、露營裝備"
+            },
+            {
+                id: "nylon",
+                category: "2. 工程級與高強度耗材",
+                name: "Nylon（尼龍 / PA）",
+                image: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["極佳耐磨性", "極高強度與彈性", "摩擦係數低"],
+                drawbacks: ["極易吸濕（需長時間烘乾）", "列印難度高，易翹曲"],
+                variants: "PA6, PA12, 碳纖尼龍",
+                applications: "齒輪、軸承、高應力結構件"
+            },
+            {
+                id: "pc",
+                category: "2. 工程級與高強度耗材",
+                name: "PC（聚碳酸酯）",
+                image: "https://images.unsplash.com/photo-1581092334651-ddf26d9a1930?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["強度極高", "耐高溫（110°C–140°C）", "防彈玻璃等級抗衝擊力"],
+                drawbacks: ["列印溫度極高（300°C+）", "極難駕馭"],
+                variants: "透明 PC、阻燃 PC",
+                applications: "高強度透明罩、高溫環境零件"
+            },
+            {
+                id: "peek",
+                category: "3. 高性能與航太級耗材（特種工業）",
+                name: "PEEK / PEKK",
+                image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["頂級高性能塑料", "可取代部分金屬", "耐腐蝕、機械強度極高"],
+                drawbacks: ["價格極其昂貴", "需要專業高溫工業列印機"],
+                variants: "醫療級 PEEK",
+                applications: "航太零件、醫療植入物、超高溫環境"
+            },
+            {
+                id: "ppsu",
+                category: "3. 高性能與航太級耗材（特種工業）",
+                name: "PPSU（聚苯碸）",
+                image: "https://images.unsplash.com/photo-1532187875605-2fe35851142b?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["極高抗熱變形溫度", "耐化學性強", "可承受反覆高壓蒸汽消毒"],
+                drawbacks: ["列印溫度極高", "冷卻控制困難"],
+                variants: "醫療消毒級",
+                applications: "醫療器械、實驗室用品、高溫流體配件"
+            },
+            {
+                id: "tpu",
+                category: "4. 彈性耗材",
+                name: "TPU / TPE（熱塑性聚氨酯）",
+                image: "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["像橡膠般的彈性", "高延伸率與吸震能力", "耐磨損"],
+                drawbacks: ["太軟易卡線", "強烈建議近端擠出機"],
+                variants: "95A (較硬), 85A (較軟)",
+                applications: "手機殼、密封圈、吸震腳墊"
+            },
+            {
+                id: "cf",
+                category: "5. 複合與外觀特效耗材",
+                name: "碳纖維複合材質 (CF Filled)",
+                image: "https://images.unsplash.com/photo-1535813548-6601f6945363?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["大幅提升剛性與尺寸穩定性", "啞光碳纖質感"],
+                drawbacks: ["具磨蝕性，需硬化鋼噴嘴"],
+                variants: "PA-CF, PLA-CF, PETG-CF",
+                applications: "競賽用無人機架、高剛性外殼"
+            },
+            {
+                id: "wood",
+                category: "5. 複合與外觀特效耗材",
+                name: "木質 / 仿木耗材 (Wood)",
+                image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["含有木粉成分", "成品有木頭香味", "表面可打磨與上漆"],
+                drawbacks: ["容易堵嘴", "層間強度較低"],
+                variants: "松木色、胡桃木色",
+                applications: "工藝品、室內裝飾、建築模型"
+            },
+            {
+                id: "metal",
+                category: "5. 複合與外觀特效耗材",
+                name: "金屬質感耗材 (Metal Filled)",
+                image: "https://images.unsplash.com/photo-1581092162384-8987c1d64718?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["含銅/鐵/鋁粉末", "重量沉甸甸", "拋光後呈現金屬光澤"],
+                drawbacks: ["極重、磨噴嘴", "脆性大"],
+                variants: "紅銅、青銅、鐵質(會生鏽)",
+                applications: "雕像、仿古擺飾、重量感配件"
+            },
+            {
+                id: "glow",
+                category: "5. 複合與外觀特效耗材",
+                name: "夜光 / 變色耗材",
+                image: "https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["暗處發光或隨溫控變色", "視覺效果強烈"],
+                drawbacks: ["非常磨噴嘴"],
+                variants: "夜光綠、感溫變色",
+                applications: "派對道具、警示標籤、趣味玩具"
+            },
+            {
+                id: "pva",
+                category: "6. 支撐專用耗材（雙噴頭專用）",
+                name: "PVA（聚乙烯醇）",
+                image: "https://images.unsplash.com/photo-1620714223084-8fcacc6dfd8d?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["水溶性", "不傷模型表面"],
+                drawbacks: ["對濕度極度敏感", "價格較高"],
+                variants: "標準水溶",
+                applications: "複雜結構支撐"
+            },
+            {
+                id: "hips",
+                category: "6. 支撐專用耗材（雙噴頭專用）",
+                name: "HIPS（高抗衝聚苯乙烯）",
+                image: "https://images.unsplash.com/photo-1581093458791-9f3c3900df4b?q=80&w=600&auto=format&fit=crop", // Placeholder
+                features: ["檸檬烯溶性", "常搭配 ABS 使用"],
+                drawbacks: ["需特定溶劑溶解"],
+                variants: "白色、自然色",
+                applications: "ABS 複雜結構支撐"
+            }
+        ];
+
+        // --- Core Functions ---
+
+        function switchTab(tabId) {
+            // UI Toggle
+            const sections = ['ai-assistant-section', 'filaments-section'];
+            sections.forEach(s => {
+                document.getElementById(s).classList.add('hidden');
+            });
+            document.getElementById(`${tabId}-section`).classList.remove('hidden');
+
+            // Nav Styling
+            document.getElementById('nav-ai-assistant').classList.remove('tab-active');
+            document.getElementById('nav-filaments').classList.remove('tab-active');
+            document.getElementById(`nav-${tabId}`).classList.add('tab-active');
+
+            if (tabId === 'filaments') {
+                showCategories();
+            }
+        }
+
+        // AI Assistant Logic
+        function analyzeParameters() {
+            const object = document.getElementById('input-object').value;
+            const scenario = document.getElementById('input-scenario').value;
+
+            if (!object || !scenario) {
+                alert('請填寫物品名稱與使用情境！');
+                return;
+            }
+
+            // Hide old results, show loader
+            document.getElementById('result-area').classList.add('hidden');
+            document.getElementById('loading-state').classList.remove('hidden');
+
+            // Mock "AI" Processing
+            setTimeout(() => {
+                renderResults(object, scenario);
+                document.getElementById('loading-state').classList.add('hidden');
+                document.getElementById('result-area').classList.remove('hidden');
+            }, 1500);
+        }
+
+        function renderResults(object, scenario) {
+            const resultArea = document.getElementById('result-area');
+            
+            // Logic to pick material based on scenario (Simple Keyword Matching)
+            let primaryMaterial = "PLA";
+            if (scenario.includes("熱") || scenario.includes("車")) primaryMaterial = "ABS/ASA";
+            if (scenario.includes("強") || scenario.includes("零件")) primaryMaterial = "PETG/Nylon";
+            if (scenario.includes("軟") || scenario.includes("彈")) primaryMaterial = "TPU";
+
+            const mockData = [
+                {
+                    type: "耐用型",
+                    style: "border-green-500/30",
+                    material: primaryMaterial === "PLA" ? "PETG / Nylon" : primaryMaterial,
+                    layer: "0.2mm",
+                    infill: "40% (Gyroid 幾何)",
+                    temp: "240°C - 260°C"
+                },
+                {
+                    type: "經濟型",
+                    style: "border-blue-500/30",
+                    material: "PLA+ / PETG",
+                    layer: "0.28mm",
+                    infill: "15% (Grid 網格)",
+                    temp: "210°C - 230°C"
+                },
+                {
+                    type: "樣品型",
+                    style: "border-purple-500/30",
+                    material: "PLA",
+                    layer: "0.2mm",
+                    infill: "8% (Lightning 雷電)",
+                    temp: "200°C"
+                }
+            ];
+
+            resultArea.innerHTML = mockData.map(item => `
+                <div class="glass p-6 rounded-3xl border-t-4 ${item.style} hover:shadow-2xl transition-all">
+                    <h3 class="text-xl font-bold mb-4 text-gray-700">${item.type}</h3>
+                    <div class="space-y-4">
+                        <div class="bg-white/30 p-3 rounded-xl">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">材料推薦</p>
+                            <p class="font-bold text-green-600">${item.material}</p>
+                        </div>
+                        <div class="bg-white/30 p-3 rounded-xl">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">層高建議</p>
+                            <p class="font-bold">${item.layer}</p>
+                        </div>
+                        <div class="bg-white/30 p-3 rounded-xl">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">填充密度</p>
+                            <p class="font-bold">${item.infill}</p>
+                        </div>
+                        <div class="bg-white/30 p-3 rounded-xl">
+                            <p class="text-xs text-gray-500 uppercase tracking-wider mb-1">噴嘴溫度</p>
+                            <p class="font-bold">${item.temp}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filaments Encyclopedia Logic
+        function showCategories() {
+            document.getElementById('filament-details').classList.add('hidden');
+            document.getElementById('filament-categories').classList.remove('hidden');
+
+            const categories = [...new Set(filamentDatabase.map(f => f.category))];
+            const container = document.getElementById('filament-categories');
+
+            container.innerHTML = categories.map(cat => `
+                <button onclick="showDetails('${cat}')" 
+                    class="glass p-8 rounded-3xl text-left glass-hover h-48 flex flex-col justify-end group overflow-hidden relative">
+                    <div class="absolute inset-0 bg-gradient-to-t from-green-500/10 to-transparent group-hover:from-green-500/20 transition-all"></div>
+                    <span class="text-lg font-bold relative z-10">${cat}</span>
+                    <span class="text-xs text-gray-500 mt-2 relative z-10">點擊查看詳細耗材資料 →</span>
+                </button>
+            `).join('');
+        }
+
+        function showDetails(categoryName) {
+            const categoriesEl = document.getElementById('filament-categories');
+            const detailsEl = document.getElementById('filament-details');
+            const cardsContainer = document.getElementById('filament-cards-container');
+
+            // Filter data
+            const filtered = filamentDatabase.filter(f => f.category === categoryName);
+
+            // Render cards
+            cardsContainer.innerHTML = filtered.map(item => `
+                <div class="glass rounded-3xl overflow-hidden flex flex-col glass-hover border-transparent">
+                    <div class="h-48 overflow-hidden relative bg-gray-200">
+                        <!-- 成品圖片展示區 -->
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity">
+                        <!-- <img src="placeholders/${item.id}.jpg" alt="替換成真實成品圖"> -->
+                        <div class="absolute top-4 left-4">
+                            <span class="px-3 py-1 bg-white/60 backdrop-blur-md text-xs font-bold rounded-full text-green-700 border border-white/40">
+                                ${item.id.toUpperCase()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <h3 class="text-xl font-bold text-gray-800">${item.name}</h3>
+                        
+                        <div>
+                            <p class="text-xs font-bold text-green-600 mb-1 uppercase tracking-tighter">特性</p>
+                            <ul class="text-sm text-gray-600 list-disc list-inside">
+                                ${item.features.map(f => `<li>${f}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold text-red-400 mb-1 uppercase tracking-tighter">缺點 / 挑戰</p>
+                            <ul class="text-sm text-gray-500 list-disc list-inside">
+                                ${item.drawbacks.map(d => `<li>${d}</li>`).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="pt-4 border-t border-white/20">
+                            <p class="text-xs font-bold text-gray-400 mb-1 uppercase">常見應用</p>
+                            <p class="text-sm text-gray-600 italic">${item.applications}</p>
+                        </div>
+                        
+                        <div class="text-[10px] text-gray-400">
+                            <strong>衍生款式：</strong> ${item.variants}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Animations
+            categoriesEl.classList.add('hidden');
+            detailsEl.classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Initialize
+        window.onload = () => {
+            showCategories();
+        };
+
+    </script>
+</body>
+</html>
